@@ -78,7 +78,7 @@ class MyWidget extends StatelessWidget {
                 icon: Icon(
                   Icons.add_box_sharp,
                   size: 22,
-                  opticalSize: 12,
+                  opticalSize: 13,
                   color: Colors.red.shade400,
                   fill: 0.4,
                 ),
