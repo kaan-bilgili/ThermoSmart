@@ -20,7 +20,7 @@ class MyWidget extends StatelessWidget {
           foregroundColor: const Color.fromARGB(255, 255, 255, 255),
           title: Text(
             'KONTES BIR CANAVAR TUM SINIF ONDAN KORKAR',
-            style: TextStyle(fontSize: 30.0, fontWeight: FontWeight(300)),
+            style: TextStyle(fontSize: 30.0, fontWeight: FontWeight(400)),
           ),
         ),
         body: Center(
