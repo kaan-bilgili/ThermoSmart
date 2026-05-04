@@ -1,3 +1,4 @@
+import 'graphs_page.dart';
 import 'package:flutter/material.dart';
 import 'thermostat.dart';
 import 'mqtt_service.dart';
@@ -24,7 +25,7 @@ class _ThermostatScreenState extends State<ThermostatScreen> {
 
     if (diff.abs() <= 1) {
       acStatus = "IDLE";
-    } else if (diff > 1){
+    } else if (diff > 1) {
       acStatus = "Cooling ❄️";
     } else {
       acStatus = "Heating 🔥";
@@ -174,9 +175,15 @@ class _ThermostatScreenState extends State<ThermostatScreen> {
                       icon: Icon(Icons.invert_colors, color: Colors.white),
                       text: "Fan",
                     ),
-                    const BottomButton(
-                      icon: Icon(Icons.schedule, color: Colors.white),
-                      text: "Schedule",
+                    BottomButton(
+                      icon: const Icon(Icons.bar_chart, color: Colors.white),
+                      text: "Graphs",
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => GraphsPage()),
+                        );
+                      },
                     ),
                   ],
                 ),
