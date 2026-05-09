@@ -1,0 +1,7 @@
+Flask==3.1.1
+paho-mqtt==2.1.0
+psycopg2==2.9.10
+types-Flask-Cors==5.0
+types-Flask-Migrate==4.0
+types-Flask-SocketIO==5.4
+types-psycopg2==2.9.10
