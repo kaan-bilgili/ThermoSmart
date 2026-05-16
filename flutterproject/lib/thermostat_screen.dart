@@ -58,16 +58,14 @@ class _ThermostatScreenState extends State<ThermostatScreen> {
           children: [
             _buildHeader(),
             Expanded(
-              child: SingleChildScrollView(
-                child: Column(
-                  children: [
-                    _buildDialArea(),
-                    _buildStatusPill(),
-                    const SizedBox(height: 12),
-                    const Divider(color: Color(0xFF1A2A36), thickness: 0.5, height: 1),
-                    _buildBottomArea(),
-                  ],
-                ),
+              child: Column(
+                children: [
+                  _buildDialArea(),
+                  _buildStatusPill(),
+                  const SizedBox(height: 12),
+                  const Divider(color: Color(0xFF1A2A36), thickness: 0.5, height: 1),
+                  Expanded(child: _buildBottomArea()),
+                ],
               ),
             ),
           ],
@@ -180,9 +178,9 @@ class _ThermostatScreenState extends State<ThermostatScreen> {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
       child: Column(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           _buildModeCards(),
-          const SizedBox(height: 12),
           _buildActionButtons(),
         ],
       ),
