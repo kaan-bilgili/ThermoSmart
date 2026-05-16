@@ -1,12 +1,6 @@
 #include <WiFi.h>
 #include <WiFiManager.h>
 #include <PubSubClient.h>
-<<<<<<< Updated upstream
-
-#define LED_PIN 2   // D4 = GPIO2
-
-const char* mqtt_server = "192.168.43.120"; // Raspberry Pi IP
-=======
 #include <DHT.h>
 #include <Preferences.h>
 
@@ -16,7 +10,6 @@ const char* mqtt_server = "192.168.43.120"; // Raspberry Pi IP
 
 // ===== LED =====
 #define LED_PIN 5
->>>>>>> Stashed changes
 
 // ===== RESET BUTTON =====
 // Bu pine bağlı butona 3 saniye basılı tutulursa WiFi ayarları sıfırlanır
@@ -24,45 +17,24 @@ const char* mqtt_server = "192.168.43.120"; // Raspberry Pi IP
 
 WiFiClient espClient;
 PubSubClient client(espClient);
-<<<<<<< Updated upstream
-=======
 DHT dht(DHTPIN, DHTTYPE);
 Preferences preferences;
->>>>>>> Stashed changes
 
 char mqtt_server[40] = "192.168.1.100";
 int setpoint = 22;
 
-<<<<<<< Updated upstream
-void callback(char* topic, byte* payload, unsigned int length) {
-  String message;
-
-  for (int i = 0; i < length; i++) {
-=======
 // MQTT callback
 void callback(char *topic, byte *payload, unsigned int length)
 {
   String message = "";
   for (int i = 0; i < length; i++)
   {
->>>>>>> Stashed changes
     message += (char)payload[i];
   }
 
-  Serial.print("Setpoint received: ");
+  Serial.print("Yeni setpoint: ");
   Serial.println(message);
 
-<<<<<<< Updated upstream
-  setpoint = message.toInt();
-}
-
-void reconnect() {
-  while (!client.connected()) {
-    Serial.print("Connecting MQTT...");
-
-    if (client.connect("ESP32Thermostat")) {
-      Serial.println("connected");
-=======
   int newSetpoint = message.toInt();
   if (newSetpoint > 0)
   {
@@ -74,17 +46,13 @@ void connectWiFi()
 {
   WiFiManager wifiManager;
 
-  // Portal açık kalma süresi (saniye) - bu süre dolunca kaydedilmiş ayarla devam eder
   wifiManager.setConfigPortalTimeout(120);
 
-  // MQTT sunucu IP'sini de portal üzerinden ayarlanabilir yap
   WiFiManagerParameter mqtt_param("mqtt", "MQTT Sunucu IP", mqtt_server, 40);
   wifiManager.addParameter(&mqtt_param);
 
   Serial.println("WiFi baglaniyor...");
 
-  // Kayıtlı WiFi varsa direkt bağlanır.
-  // Yoksa "ThermoSmart-Setup" adlı AP açar, kullanıcı bağlanıp tarayıcıda ayarlar.
   if (!wifiManager.autoConnect("ThermoSmart-Setup", "thermosetup"))
   {
     Serial.println("WiFi baglanti basarisiz, yeniden baslatiliyor...");
@@ -92,7 +60,6 @@ void connectWiFi()
     ESP.restart();
   }
 
-  // Portal üzerinden girilen MQTT IP'yi kaydet
   strncpy(mqtt_server, mqtt_param.getValue(), 40);
   preferences.begin("thermosmart", false);
   preferences.putString("mqtt_ip", mqtt_server);
@@ -113,26 +80,18 @@ void reconnect()
     if (client.connect("ESP32TEST"))
     {
       Serial.println("MQTT CONNECT BASARILI");
->>>>>>> Stashed changes
       client.subscribe("thermosmart/setpoint");
-    } else {
-      Serial.print("failed ");
+      Serial.println("Subscribed OK");
+    }
+    else
+    {
+      Serial.print("MQTT FAIL: ");
       Serial.println(client.state());
-      delay(2000);
+      delay(3000);
     }
   }
 }
 
-<<<<<<< Updated upstream
-void setup() {
-  Serial.begin(115200);
-
- 
-  WiFiManager wm;
-  wm.autoConnect("Thermostat-Setup");
-
-  Serial.println("WiFi Connected!");
-=======
 void checkResetButton()
 {
   pinMode(RESET_PIN, INPUT_PULLUP);
@@ -165,7 +124,6 @@ void setup()
   Serial.begin(115200);
   pinMode(LED_PIN, OUTPUT);
 
-  // Kaydedilmiş MQTT IP varsa yükle
   preferences.begin("thermosmart", true);
   String saved_mqtt = preferences.getString("mqtt_ip", "192.168.1.100");
   preferences.end();
@@ -177,18 +135,11 @@ void setup()
   delay(2000);
 
   connectWiFi();
->>>>>>> Stashed changes
 
   client.setServer(mqtt_server, 1883);
   client.setCallback(callback);
-
-  pinMode(LED_PIN, OUTPUT);
 }
 
-<<<<<<< Updated upstream
-void loop() {
-  if (!client.connected()) {
-=======
 void loop()
 {
   if (WiFi.status() != WL_CONNECTED)
@@ -198,30 +149,38 @@ void loop()
 
   if (!client.connected())
   {
->>>>>>> Stashed changes
     reconnect();
   }
 
   client.loop();
 
+  float temperature = dht.readTemperature();
 
-  float temperature = random(20, 30);
+  if (isnan(temperature))
+  {
+    Serial.println("DHT okuma hatasi");
+    delay(2000);
+    return;
+  }
 
   char tempString[8];
   dtostrf(temperature, 1, 2, tempString);
 
   client.publish("thermosmart/temperature", tempString);
 
-  Serial.print("Temperature sent: ");
-  Serial.println(tempString);
+  Serial.print("Temp: ");
+  Serial.print(tempString);
+  Serial.print(" | Setpoint: ");
+  Serial.println(setpoint);
 
-
-  if (temperature < setpoint - 1) {
-    digitalWrite(LED_PIN, HIGH);  // LED ON
+  if (temperature < setpoint - 1)
+  {
+    digitalWrite(LED_PIN, HIGH);
     Serial.println("Heating ON");
   }
-  else if (temperature > setpoint + 1) {
-    digitalWrite(LED_PIN, LOW);   // LED OFF
+  else if (temperature > setpoint + 1)
+  {
+    digitalWrite(LED_PIN, LOW);
     Serial.println("Heating OFF");
   }
 
