@@ -91,7 +91,7 @@ class _ThermostatScreenState extends State<ThermostatScreen> {
                             'ThermoSmart',
                             style: TextStyle(
                               color: textColor,
-                              fontSize: 20,
+                              fontSize: 5,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
