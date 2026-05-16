@@ -17,6 +17,7 @@ class _ThermostatScreenState extends State<ThermostatScreen> {
   double setTemp = 26;
   String acStatus = "IDLE";
   late ApiService apiService;
+  String _connectionStatus = 'Connecting…';
 
   bool _turnOn = true;
 
@@ -41,6 +42,16 @@ class _ThermostatScreenState extends State<ThermostatScreen> {
       setState(() {
         currentTemp = temp;
         updateLogic();
+        if (_connectionStatus != 'Connected ✅') {
+          _connectionStatus = 'Connected ✅';
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('API connected successfully!'),
+              backgroundColor: Color(0xFF2ECC71),
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
       });
     };
     apiService.startPolling();
@@ -55,7 +66,7 @@ class _ThermostatScreenState extends State<ThermostatScreen> {
           child: Column(
             children: [
               SizedBox(
-                height: 52,
+                height: 70,
                 child: Row(
                   children: [
                     Container(
@@ -75,8 +86,8 @@ class _ThermostatScreenState extends State<ThermostatScreen> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.end,
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        children: const [
-                          Text(
+                        children: [
+                          const Text(
                             'ThermoSmart',
                             style: TextStyle(
                               color: textColor,
@@ -85,10 +96,19 @@ class _ThermostatScreenState extends State<ThermostatScreen> {
                             ),
                           ),
                           Text(
+                            _connectionStatus,
+                            style: TextStyle(
+                              color: _connectionStatus == 'Connected ✅'
+                                  ? const Color(0xFF2ECC71)
+                                  : const Color(0xFFE67E22),
+                              fontSize: 10,
+                            ),
+                          ),
+                          const Text(
                             'Kontes Room',
                             style: TextStyle(color: textColor, fontSize: 12),
                           ),
-                          SizedBox(height: 5),
+                          const SizedBox(height: 5),
                         ],
                       ),
                     ),

@@ -39,9 +39,11 @@ class ApiService {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
-        final temp = (data['temp'] as num).toDouble();
-        final humidity = (data['humidity'] as num).toDouble();
-        onReadingReceived?.call(temp, humidity);
+        if (data['temp'] != null && data['humidity'] != null) {
+          final temp = (data['temp'] as num).toDouble();
+          final humidity = (data['humidity'] as num).toDouble();
+          onReadingReceived?.call(temp, humidity);
+        }
       }
     } catch (e) {
       print('ApiService polling error: $e');
