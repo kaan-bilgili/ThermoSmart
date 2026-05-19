@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'graphs_page.dart';
 import 'thermostat.dart';
-import 'mqtt_service.dart';
+import 'api_service.dart';
 
 class ThermostatScreen extends StatefulWidget {
   const ThermostatScreen({super.key});
@@ -22,8 +22,9 @@ class _ThermostatScreenState extends State<ThermostatScreen> {
 
   double currentTemp = 27;
   double setTemp = 26;
-  String acStatus = 'IDLE';
-  late MQTTService mqttService;
+  String acStatus = "IDLE";
+  late ApiService apiService;
+  String _connectionStatus = 'Connecting…';
 
   void _updateLogic() {
     final diff = currentTemp - setTemp;
@@ -39,14 +40,25 @@ class _ThermostatScreenState extends State<ThermostatScreen> {
   @override
   void initState() {
     super.initState();
-    mqttService = MQTTService();
-    mqttService.connect();
-    mqttService.onTemperatureChanged = (temp) {
+
+    apiService = ApiService();
+    apiService.onReadingReceived = (temp, humidity) {
       setState(() {
         currentTemp = temp;
-        _updateLogic();
+        updateLogic();
+        if (_connectionStatus != 'Connected ✅') {
+          _connectionStatus = 'Connected ✅';
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('API connected successfully!'),
+              backgroundColor: Color(0xFF2ECC71),
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
       });
     };
+    apiService.startPolling();
   }
 
   @override
