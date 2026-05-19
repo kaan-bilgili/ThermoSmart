@@ -1,5 +1,4 @@
 #include <WiFi.h>
-#include <WiFiManager.h>
 #include <PubSubClient.h>
 #include <DHT.h>
 #include <Preferences.h>

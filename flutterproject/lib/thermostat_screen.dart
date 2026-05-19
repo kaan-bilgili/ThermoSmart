@@ -1,3 +1,4 @@
+import 'graphs_page.dart';
 import 'package:flutter/material.dart';
 import 'thermostat.dart';
 import 'mqtt_service.dart';
@@ -17,17 +18,15 @@ class _ThermostatScreenState extends State<ThermostatScreen> {
   String acStatus = "IDLE";
   late MQTTService mqttService;
 
-  bool _turnOn = true;
-
   void updateLogic() {
-    double diff = (currentTemp - setTemp);
+    double diff = currentTemp - setTemp;
 
     if (diff.abs() <= 1) {
       acStatus = "IDLE";
-    } else if (diff > 1){
-      acStatus = "Cooling ❄️";
+    } else if (diff > 1) {
+      acStatus = "Cooling";
     } else {
-      acStatus = "Heating 🔥";
+      acStatus = "Heating";
     }
   }
 
@@ -37,6 +36,7 @@ class _ThermostatScreenState extends State<ThermostatScreen> {
 
     mqttService = MQTTService();
     mqttService.connect();
+
     mqttService.onTemperatureChanged = (temp) {
       setState(() {
         currentTemp = temp;
@@ -49,7 +49,9 @@ class _ThermostatScreenState extends State<ThermostatScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(color: Color(0xFF0F2027)),
+        decoration: const BoxDecoration(
+          color: Color(0xFF0F2027),
+        ),
         child: SafeArea(
           child: Column(
             children: [
@@ -85,7 +87,10 @@ class _ThermostatScreenState extends State<ThermostatScreen> {
                           ),
                           Text(
                             'Kontes Room',
-                            style: TextStyle(color: textColor, fontSize: 12),
+                            style: TextStyle(
+                              color: textColor,
+                              fontSize: 12,
+                            ),
                           ),
                           SizedBox(height: 5),
                         ],
@@ -101,9 +106,8 @@ class _ThermostatScreenState extends State<ThermostatScreen> {
                             size: 45,
                           ),
                           text:
-                              '${currentTemp.toStringAsFixed(1)} C is the current temperature.',
+                              '${currentTemp.toStringAsFixed(1)}°C is the current temperature.',
                         ),
-                        const SizedBox(height: 0),
                       ],
                     ),
                   ],
@@ -114,69 +118,97 @@ class _ThermostatScreenState extends State<ThermostatScreen> {
                 child: Center(
                   child: Thermostat(
                     radius: 150,
-                    turnOn: _turnOn,
+                    turnOn: true,
                     modeIcon: const Icon(
                       Icons.loop,
-                      color: Color.fromARGB(255, 255, 255, 255),
+                      color: Colors.white,
                     ),
-                    textStyle: const TextStyle(color: textColor, fontSize: 34),
+                    textStyle: const TextStyle(
+                      color: textColor,
+                      fontSize: 34,
+                    ),
                     minValue: 18,
                     maxValue: 38,
                     initialValue: 26,
                     onValueChanged: (value) {
-                      print("Selected value: $value");
                       setState(() {
                         setTemp = value.toDouble();
                         updateLogic();
                       });
+
                       mqttService.publishSetpoint(value.toDouble());
                     },
                   ),
                 ),
               ),
-              SizedBox(height: 20),
+
+              const SizedBox(height: 20),
 
               Text(
-                acStatus,
+                acStatus == "IDLE"
+                    ? "IDLE"
+                    : acStatus == "Cooling"
+                        ? "Cooling ❄️"
+                        : "Heating 🔥",
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: acStatus == "IDLE"
-                      ? Color(0xFFA9A6AF)
-                      : Color(0xFF4EC4EC),
+                      ? const Color(0xFFA9A6AF)
+                      : acStatus == "Cooling"
+                          ? const Color(0xFF4EC4EC)
+                          : Colors.orange,
                   fontSize: 22,
                   fontWeight: FontWeight.w500,
                   letterSpacing: 0.5,
                 ),
               ),
 
-              SizedBox(height: 20),
+              const SizedBox(height: 20),
 
-              Container(height: 1, color: Colors.white.withOpacity(0.2)),
+              Container(
+                height: 1,
+                color: Colors.white.withOpacity(0.2),
+              ),
 
               Container(
                 margin: const EdgeInsets.symmetric(vertical: 24),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
-                    BottomButton(
+                    BottomIndicator(
                       icon: Icon(
                         Icons.ac_unit,
-                        color: _turnOn ? const Color(0xFF4EC4EC) : Colors.white,
+                        color: acStatus == "Cooling"
+                            ? const Color(0xFF4EC4EC)
+                            : Colors.white,
                       ),
                       text: "Cooling",
+                    ),
+
+                    BottomIndicator(
+                      icon: Icon(
+                        Icons.local_fire_department,
+                        color: acStatus == "Heating"
+                            ? Colors.orange
+                            : Colors.white,
+                      ),
+                      text: "Heating",
+                    ),
+
+                    BottomButton(
+                      icon: const Icon(
+                        Icons.bar_chart,
+                        color: Colors.white,
+                      ),
+                      text: "Graphs",
                       onTap: () {
-                        setState(() {
-                          _turnOn = !_turnOn;
-                        });
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => GraphsPage(),
+                          ),
+                        );
                       },
-                    ),
-                    const BottomButton(
-                      icon: Icon(Icons.invert_colors, color: Colors.white),
-                      text: "Fan",
-                    ),
-                    const BottomButton(
-                      icon: Icon(Icons.schedule, color: Colors.white),
-                      text: "Schedule",
                     ),
                   ],
                 ),
@@ -193,7 +225,11 @@ class InfoIcon extends StatelessWidget {
   final Widget icon;
   final String text;
 
-  const InfoIcon({super.key, required this.icon, required this.text});
+  const InfoIcon({
+    super.key,
+    required this.icon,
+    required this.text,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -203,9 +239,49 @@ class InfoIcon extends StatelessWidget {
         const SizedBox(width: 8),
         Text(
           text,
-          style: const TextStyle(color: Color(0xFFA9A6AF), fontSize: 12),
+          style: const TextStyle(
+            color: Color(0xFFA9A6AF),
+            fontSize: 12,
+          ),
         ),
         const SizedBox(width: 12),
+      ],
+    );
+  }
+}
+
+class BottomIndicator extends StatelessWidget {
+  final Widget icon;
+  final String text;
+
+  const BottomIndicator({
+    super.key,
+    required this.icon,
+    required this.text,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 52,
+          height: 52,
+          margin: const EdgeInsets.only(bottom: 8),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(color: const Color(0xFF3F5BFA)),
+          ),
+          child: Center(child: icon),
+        ),
+        Text(
+          text,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 12,
+          ),
+        ),
       ],
     );
   }
@@ -214,13 +290,13 @@ class InfoIcon extends StatelessWidget {
 class BottomButton extends StatelessWidget {
   final Widget icon;
   final String text;
-  final VoidCallback? onTap;
+  final VoidCallback onTap;
 
   const BottomButton({
     super.key,
     required this.icon,
     required this.text,
-    this.onTap,
+    required this.onTap,
   });
 
   @override
@@ -238,9 +314,15 @@ class BottomButton extends StatelessWidget {
               shape: BoxShape.circle,
               border: Border.all(color: const Color(0xFF3F5BFA)),
             ),
-            child: icon,
+            child: Center(child: icon),
           ),
-          Text(text, style: const TextStyle(color: Colors.white, fontSize: 12)),
+          Text(
+            text,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 12,
+            ),
+          ),
         ],
       ),
     );
