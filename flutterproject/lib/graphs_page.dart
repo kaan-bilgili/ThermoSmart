@@ -17,44 +17,14 @@ class _GraphsPageState extends State<GraphsPage>
   late MQTTService mqttService;
   List<double> dynamicTemps = [];
 
-  // Sample fallback data
   final List<double> hourlyTemps = [
-    24.5,
-    24.0,
-    23.5,
-    23.0,
-    22.8,
-    22.5,
-    23.0,
-    24.0,
-    25.5,
-    26.0,
-    26.5,
-    27.0,
-    27.5,
-    27.8,
-    28.0,
-    27.5,
-    27.0,
-    26.8,
-    26.5,
-    26.0,
-    25.5,
-    25.0,
-    24.8,
-    24.5,
+    24.5, 24.0, 23.5, 23.0, 22.8, 22.5, 23.0, 24.0,
+    25.5, 26.0, 26.5, 27.0, 27.5, 27.8, 28.0, 27.5,
+    27.0, 26.8, 26.5, 26.0, 25.5, 25.0, 24.8, 24.5,
   ];
 
   final List<double> weeklyTemps = [23.5, 25.0, 26.5, 27.0, 24.0, 22.5, 25.5];
-  final List<String> weekDays = [
-    'Mon',
-    'Tue',
-    'Wed',
-    'Thu',
-    'Fri',
-    'Sat',
-    'Sun',
-  ];
+  final List<String> weekDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
   int _selectedTab = 0;
 
@@ -66,6 +36,7 @@ class _GraphsPageState extends State<GraphsPage>
     mqttService.connect();
 
     mqttService.onTemperatureChanged = (temp) {
+      if (!mounted) return;
       setState(() {
         dynamicTemps.add(temp);
         if (dynamicTemps.length > 24) {
@@ -89,6 +60,7 @@ class _GraphsPageState extends State<GraphsPage>
 
   @override
   void dispose() {
+    mqttService.onTemperatureChanged = null;
     _animationController.dispose();
     super.dispose();
   }
@@ -187,23 +159,11 @@ class _GraphsPageState extends State<GraphsPage>
 
               Row(
                 children: [
-                  _buildStatCard(
-                    'Min',
-                    '${minTemp.toStringAsFixed(1)}°C',
-                    const Color(0xFF3B82F6),
-                  ),
+                  _buildStatCard('Min', '${minTemp.toStringAsFixed(1)}°C', const Color(0xFF3B82F6)),
                   const SizedBox(width: 12),
-                  _buildStatCard(
-                    'Max',
-                    '${maxTemp.toStringAsFixed(1)}°C',
-                    const Color(0xFF6366F1),
-                  ),
+                  _buildStatCard('Max', '${maxTemp.toStringAsFixed(1)}°C', const Color(0xFF6366F1)),
                   const SizedBox(width: 12),
-                  _buildStatCard(
-                    'Avg',
-                    '${avgTemp.toStringAsFixed(1)}°C',
-                    const Color(0xFF8B5CF6),
-                  ),
+                  _buildStatCard('Avg', '${avgTemp.toStringAsFixed(1)}°C', const Color(0xFF8B5CF6)),
                 ],
               ),
               const SizedBox(height: 28),
@@ -238,9 +198,7 @@ class _GraphsPageState extends State<GraphsPage>
                         builder: (context, child) {
                           return CustomPaint(
                             painter: TemperatureChartPainter(
-                              data: _selectedTab == 0
-                                  ? currentData
-                                  : weeklyTemps,
+                              data: _selectedTab == 0 ? currentData : weeklyTemps,
                               labels: _selectedTab == 1 ? weekDays : null,
                               progress: _animation.value,
                             ),
@@ -349,16 +307,12 @@ class TemperatureChartPainter extends CustomPainter {
     final double minVal = data.reduce(min) - 1;
     final double maxVal = data.reduce(max) + 1;
     final double range = maxVal - minVal;
-    final int visibleCount = (data.length * progress).ceil().clamp(
-      2,
-      data.length,
-    );
+    final int visibleCount = (data.length * progress).ceil().clamp(2, data.length);
 
     final double stepX = size.width / (data.length - 1);
     final labelHeight = 20.0;
     final chartHeight = size.height - labelHeight;
 
-    // GRID
     final gridPaint = Paint()
       ..color = const Color(0xFF1E2A40)
       ..strokeWidth = 1;
@@ -368,7 +322,6 @@ class TemperatureChartPainter extends CustomPainter {
       canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
     }
 
-    // POINTS
     final List<Offset> points = [];
     for (int i = 0; i < visibleCount; i++) {
       final x = i * stepX;
@@ -378,9 +331,7 @@ class TemperatureChartPainter extends CustomPainter {
 
     if (points.length < 2) return;
 
-    // LINE
     final path = Path()..moveTo(points.first.dx, points.first.dy);
-
     for (int i = 1; i < points.length; i++) {
       path.lineTo(points[i].dx, points[i].dy);
     }
@@ -394,7 +345,5 @@ class TemperatureChartPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant TemperatureChartPainter oldDelegate) {
-    return true;
-  }
+  bool shouldRepaint(covariant TemperatureChartPainter oldDelegate) => true;
 }
