@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'graphs_page.dart';
 import 'thermostat.dart';
-import 'mqtt_service.dart';
+import 'api_service.dart';
 
 class ThermostatScreen extends StatefulWidget {
   const ThermostatScreen({super.key});
@@ -22,8 +22,9 @@ class _ThermostatScreenState extends State<ThermostatScreen> {
 
   double currentTemp = 27;
   double setTemp = 26;
-  String acStatus = 'IDLE';
-  late MQTTService mqttService;
+  String acStatus = "IDLE";
+  late ApiService apiService;
+  String _connectionStatus = 'Connecting…';
 
   void _updateLogic() {
     final diff = currentTemp - setTemp;
@@ -39,36 +40,180 @@ class _ThermostatScreenState extends State<ThermostatScreen> {
   @override
   void initState() {
     super.initState();
-    mqttService = MQTTService();
-    mqttService.connect();
-    mqttService.onTemperatureChanged = (temp) {
+
+    apiService = ApiService();
+    apiService.onReadingReceived = (temp, humidity) {
       setState(() {
         currentTemp = temp;
-        _updateLogic();
+        updateLogic();
+        if (_connectionStatus != 'Connected ✅') {
+          _connectionStatus = 'Connected ✅';
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('API connected successfully!'),
+              backgroundColor: Color(0xFF2ECC71),
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
       });
     };
+    apiService.startPolling();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _bg,
-      body: SafeArea(
-        child: Column(
-          children: [
-            _buildHeader(),
-            Expanded(
-              child: Column(
-                children: [
-                  _buildDialArea(),
-                  _buildStatusPill(),
-                  const SizedBox(height: 12),
-                  const Divider(color: Color(0xFF1A2A36), thickness: 0.5, height: 1),
-                  Expanded(child: _buildBottomArea()),
-                ],
+      body: Container(
+        decoration: const BoxDecoration(color: Color(0xFF0F2027)),
+        child: SafeArea(
+          child: Column(
+            children: [
+              SizedBox(
+                height: 70,
+                child: Row(
+                  children: [
+                    Container(
+                      width: 48,
+                      alignment: Alignment.center,
+                      child: const Icon(
+                        Icons.keyboard_backspace,
+                        color: textColor,
+                      ),
+                    ),
+                    Container(
+                      width: 1,
+                      color: textColor,
+                      margin: const EdgeInsets.only(left: 10, right: 10),
+                    ),
+                    Expanded(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'ThermoSmart',
+                            style: TextStyle(
+                              color: textColor,
+                              fontSize: 5,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          Text(
+                            _connectionStatus,
+                            style: TextStyle(
+                              color: _connectionStatus == 'Connected ✅'
+                                  ? const Color(0xFF2ECC71)
+                                  : const Color(0xFFE67E22),
+                              fontSize: 10,
+                            ),
+                          ),
+                          const Text(
+                            'Kontes Room',
+                            style: TextStyle(color: textColor, fontSize: 12),
+                          ),
+                          const SizedBox(height: 5),
+                        ],
+                      ),
+                    ),
+                    Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        InfoIcon(
+                          icon: const Icon(
+                            Icons.thermostat,
+                            color: Color(0xFFA9A6AF),
+                            size: 45,
+                          ),
+                          text:
+                              '${currentTemp.toStringAsFixed(1)} C is the current temperature.',
+                        ),
+                        const SizedBox(height: 0),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+
+              Expanded(
+                child: Center(
+                  child: Thermostat(
+                    radius: 150,
+                    turnOn: _turnOn,
+                    modeIcon: const Icon(
+                      Icons.loop,
+                      color: Color.fromARGB(255, 255, 255, 255),
+                    ),
+                    textStyle: const TextStyle(color: textColor, fontSize: 34),
+                    minValue: 18,
+                    maxValue: 38,
+                    initialValue: 26,
+                    onValueChanged: (value) {
+                      print("Selected value: $value");
+                      setState(() {
+                        setTemp = value.toDouble();
+                        updateLogic();
+                      });
+                      apiService.sendSetpoint(value.toDouble());
+                    },
+                  ),
+                ),
+              ),
+              SizedBox(height: 20),
+
+              Text(
+                acStatus,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: acStatus == "IDLE"
+                      ? Color(0xFFA9A6AF)
+                      : Color(0xFF4EC4EC),
+                  fontSize: 22,
+                  fontWeight: FontWeight.w500,
+                  letterSpacing: 0.5,
+                ),
+              ),
+
+              SizedBox(height: 20),
+
+              Container(height: 1, color: Colors.white.withOpacity(0.2)),
+
+              Container(
+                margin: const EdgeInsets.symmetric(vertical: 24),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    BottomButton(
+                      icon: Icon(
+                        Icons.ac_unit,
+                        color: _turnOn ? const Color(0xFF4EC4EC) : Colors.white,
+                      ),
+                      text: "Cooling",
+                      onTap: () {
+                        setState(() {
+                          _turnOn = !_turnOn;
+                        });
+                      },
+                    ),
+                    const BottomButton(
+                      icon: Icon(Icons.invert_colors, color: Colors.white),
+                      text: "Fan",
+                    ),
+                    BottomButton(
+                      icon: const Icon(Icons.bar_chart, color: Colors.white),
+                      text: "Graphs",
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => GraphsPage()),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:math';
-import 'mqtt_service.dart';
+import 'api_service.dart';
 
 class GraphsPage extends StatefulWidget {
   const GraphsPage({super.key});
@@ -14,7 +14,7 @@ class _GraphsPageState extends State<GraphsPage>
   late AnimationController _animationController;
   late Animation<double> _animation;
 
-  late MQTTService mqttService;
+  late ApiService apiService;
   List<double> dynamicTemps = [];
 
   final List<double> hourlyTemps = [
@@ -32,11 +32,15 @@ class _GraphsPageState extends State<GraphsPage>
   void initState() {
     super.initState();
 
-    mqttService = MQTTService();
-    mqttService.connect();
-
-    mqttService.onTemperatureChanged = (temp) {
-      if (!mounted) return;
+    apiService = ApiService();
+    apiService.fetchHistory().then((history) {
+      if (history.isNotEmpty) {
+        setState(() {
+          dynamicTemps = history;
+        });
+      }
+    });
+    apiService.onReadingReceived = (temp, humidity) {
       setState(() {
         dynamicTemps.add(temp);
         if (dynamicTemps.length > 24) {
@@ -44,6 +48,7 @@ class _GraphsPageState extends State<GraphsPage>
         }
       });
     };
+    apiService.startPolling();
 
     _animationController = AnimationController(
       vsync: this,
@@ -60,7 +65,7 @@ class _GraphsPageState extends State<GraphsPage>
 
   @override
   void dispose() {
-    mqttService.onTemperatureChanged = null;
+    apiService.stopPolling();
     _animationController.dispose();
     super.dispose();
   }
