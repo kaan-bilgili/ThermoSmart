@@ -21,7 +21,7 @@ class MQTTService {
 
   Future<void> connect() async {
     client = MqttServerClient(
-      '172.20.10.2', // RPI IP
+      '192.168.1.100', // RPI IP
       'flutter_client',
     );
 
